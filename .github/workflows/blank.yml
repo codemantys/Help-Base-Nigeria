@@ -1,0 +1,41 @@
+name: Deploy to Public Site
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Private Repository
+        uses: actions/checkout@v3
+      
+      - name: Create config file with secrets
+        run: |
+          # Create a JavaScript config file that uses environment variables
+          echo "// This file is generated during build - secrets are injected safely" > config.js
+          echo "window.ENV = {" >> config.js
+          echo "  TELEGRAM_BOT_TOKEN: '${{ secrets.TELEGRAM_BOT_TOKEN }}'," >> config.js
+          echo "  FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}" >> config.js
+          echo "};" >> config.js
+      
+      - name: Modify HTML to use config file
+        run: |
+          # Add a script tag to load config before your main code
+          sed -i '/<head>/a \ \ \ \ <script src="config.js"></script>' index.html
+          
+          # Replace hardcoded token with environment variable
+          sed -i 's/const telegramBotToken = .*/const telegramBotToken = window.ENV.TELEGRAM_BOT_TOKEN;/g' index.html
+          
+          # Replace hardcoded Firebase config with environment variable
+          sed -i 's/const firebaseConfig = {.*}/const firebaseConfig = window.ENV.FIREBASE_CONFIG;/g' index.html
+      
+      - name: Deploy to Public Repository
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.PAT_TOKEN }}
+          external_repository: CodeMantys/CodeMantys.github.io
+          publish_branch: main
+          publish_dir: ./
+          keep_files: false
