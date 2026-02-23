@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Help Base Nigeria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-green: #1b7a43;
+            --bg-light: #f4f7f6;
+            --text-dark: #002d5b;
+            --alert-red: #d32f2f;
+            --white: #ffffff;
+            --grey: #888;
+            --border: #eeeeee;
+            --google-blue: #4285F4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .app-shell {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Floating Bot Icon */
+        .floating-bot {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--google-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.4);
+            cursor: pointer;
+            z-index: 1000;
+            border: 3px solid white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .floating-bot:active {
+            transform: scale(0.95);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.6);
+        }
+
+        .floating-bot i {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .bot-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--google-blue);
+            opacity: 0.3;
+            z-index: -1;
+            animation: pulse 2s ease-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.3; }
+            70% { transform: scale(1.3); opacity: 0; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary-green);
+            padding: 15px 20px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo-area {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            background: white;
+            color: var(--primary-green);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            font-size: 1rem;
+        }
+
+        .logo-text {
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+
+        .logo-text span {
+            font-weight: 300;
+        }
+
+        .search-bar {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 45px;
+            border-radius: 25px;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+            color: #333;
+            background: white;
+        }
+
+        .search-bar i.fa-magnifying-glass {
+            position: absolute;
+            left: 18px;
+            color: var(--grey);
+            font-size: 1rem;
+        }
+
+        .search-bar i.fa-circle-xmark {
+            position: absolute;
+            right: 18px;
+            color: var(--grey);
+            cursor: pointer;
+            display: none;
+            font-size: 1rem;
+        }
+
+        /* Content */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Home View Styles */
+        h2 {
+            color: var(--text-dark);
+            font-size: 1.2rem;
+            margin: 5px 0 15px;
+            font-weight: 700;
+        }
+       
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .cat-card {
+            background: white;
+            padding: 18px 8px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .cat-card:active {
+            transform: scale(0.97);
+            background: #f9f9f9;
+        }
+
+        .cat-card i {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+       
+        .cat-card p {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Scam Alert */
+        .scam-alert-container {
+            background: var(--alert-red);
+            border-radius: 16px;
+            color: white;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .scam-alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+
+        .scam-alert-body {
+            background: white;
+            color: #333;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .scam-icon-bg {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 3rem;
+            opacity: 0.2;
+            color: white;
+        }
+
+        /* Promo Banner */
+        .promo-banner {
+            background: linear-gradient(135deg, #0a1f2e, #1a3a4a, #2c5364);
+            border-radius: 18px;
+            padding: 22px;
+            position: relative;
+            color: white;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .promo-stars {
+            color: #ffca28;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .promo-text {
+            font-size: 1rem;
+            max-width: 70%;
+            line-height: 1.5;
+            font-weight: 400;
+            z-index: 2;
+            position: relative;
+        }
+
+        .promo-headset {
+            position: absolute;
+            right: -5px;
+            bottom: -15px;
+            font-size: 8rem;
+            opacity: 0.15;
+            color: white;
+            transform: rotate(10deg);
+        }
+
+        /* News Section */
+        .news-section {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .news-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .trending-icon {
+            background: #ff6b6b;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 25px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .news-header h3 {
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .news-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 18px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .news-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .news-content {
+            flex: 1;
+        }
+
+        .news-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            font-size: 0.7rem;
+        }
+
+        .company-tag {
+            background: #e8f5e9;
+            color: var(--primary-green);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        .time-ago {
+            color: var(--grey);
+        }
+
+        .news-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .news-excerpt {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .news-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 14px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            background-color: #f0f0f0;
+        }
+
+        .news-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            color: var(--grey);
+        }
+
+        .news-loading i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary-green);
+        }
+
+        .news-error {
+            text-align: center;
+            padding: 30px;
+            color: var(--alert-red);
+        }
+
+        .news-empty {
+            text-align: center;
+            padding: 30px;
+            color: var(--grey);
+        }
+
+        .view-more-news {
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .view-more-news button {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--primary-green);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .view-more-news button:active {
+            background: #f5f5f5;
+        }
+
+        .view-more-news button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Company List View */
+        .company-list-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        .back-btn:active {
+            background: #f5f5f5;
+        }
+
+        .category-title {
+            color: var(--text-dark);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .company-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 1px solid var(--border);
+        }
+
+        .company-card:active {
+            background: #f9f9f9;
+            transform: scale(0.99);
+        }
+
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--grey);
+            overflow: hidden;
+        }
+
+        .company-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-info h3 {
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .company-info p {
+            color: var(--grey);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .company-info p i {
+            font-size: 0.7rem;
+        }
+
+        /* Company Detail View */
+        .company-detail {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+
+        .detail-header {
+            background: linear-gradient(135deg, var(--primary-green), #146335);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .detail-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            background: white;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--primary-green);
+            overflow: hidden;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .detail-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .detail-header .category-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .detail-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+        .detail-section h2 {
+            color: var(--text-dark);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-section h2 i {
+            color: var(--primary-green);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .contact-item:active {
+            background: #f0f0f0;
+        }
+
+        .contact-item i {
+            width: 30px;
+            font-size: 1.2rem;
+            color: var(--primary-green);
+        }
+
+        .contact-item .contact-label {
+            font-size: 0.8rem;
+            color: var(--grey);
+            margin-left: auto;
+        }
+
+        .whatsapp-icon {
+            color: #25D366 !important;
+        }
+
+        .address-item {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .address-item .address-type {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+
+        .address-item .address-detail {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .social-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .social-item:active {
+            background: #f0f0f0;
+        }
+
+        .social-item i {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+
+        .website-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        /* Index Error Banner */
+        .index-error {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .index-error a {
+            color: var(--primary-green);
+            font-weight: 600;
+            text-decoration: none;
+            margin-left: auto;
+        }
+
+        .index-error a:hover {
+            text-decoration: underline;
+        }
+
+        /* Search Results */
+        .suggestion-card {
+            background: white;
+            padding: 18px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .suggestion-card:active {
+            background: #f5f5f5;
+        }
+
+        .suggestion-card i {
+            font-size: 1.5rem;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 1001;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .status-connected {
+            color: var(--primary-green);
+        }
+
+        .status-disconnected {
+            color: var(--alert-red);
+        }
+
+        .status-warning {
+            color: #856404;
+        }
+
+        /* Navigation Menu */
+        nav {
+            height: 75px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-bottom: 5px;
+            flex-shrink: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+        }
+
+        .nav-item {
+            color: #aaa;
+            font-size: 1.8rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+       
+        .nav-item.active {
+            color: var(--primary-green);
+        }
+
+        .badge {
+            position: absolute;
+            top: -2px;
+            right: 25%;
+            background: var(--alert-red);
+            color: white;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            font-weight: bold;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            header {
+                padding: 15px 30px;
+            }
+           
+            main {
+                padding: 25px 30px;
+            }
+           
+            .category-grid {
+                gap: 15px;
+            }
+           
+            .cat-card {
+                padding: 25px 15px;
+            }
+           
+            .cat-card i {
+                font-size: 2.5rem;
+            }
+           
+            .cat-card p {
+                font-size: 0.9rem;
+            }
+           
+            .promo-banner {
+                padding: 30px;
+            }
+           
+            .promo-text {
+                font-size: 1.1rem;
+                max-width: 60%;
+            }
+           
+            .news-image {
+                width: 100px;
+                height: 100px;
+            }
+           
+            .news-title {
+                font-size: 1.1rem;
+            }
+           
+            .news-excerpt {
+                font-size: 0.9rem;
+            }
+           
+            .floating-bot {
+                bottom: 100px;
+                right: 30px;
+                width: 70px;
+                height: 70px;
+            }
+           
+            .floating-bot i {
+                font-size: 2.3rem;
+            }
+        }
+
+        /* Landscape mode adjustments */
+        @media (orientation: landscape) and (max-height: 600px) {
+            header {
+                padding: 10px 20px;
+            }
+           
+            .logo-area {
+                margin-bottom: 8px;
+            }
+           
+            .category-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+           
+            .cat-card {
+                padding: 12px 5px;
+            }
+           
+            .cat-card i {
+                font-size: 1.5rem;
+            }
+           
+            nav {
+                height: 60px;
+            }
+           
+            .nav-item {
+                font-size: 1.5rem;
+            }
+           
+            .floating-bot {
+                bottom: 80px;
+                width: 50px;
+                height: 50px;
+            }
+           
+            .floating-bot i {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-shell">
+    <!-- Floating Bot Icon -->
+    <div class="floating-bot" onclick="console.log('Bot clicked - AI assistant coming soon!')">
+        <div class="bot-pulse"></div>
+        <i class="fa-brands fa-google"></i>
+    </div>
+
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status status-disconnected">
+        <i class="fa-solid fa-circle"></i> Initializing...
+    </div>
+
+    <header>
+        <div class="logo-area" id="header-logo">
+            <div class="logo-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <span class="logo-text">Help Base <span>NIGERIA</span></span>
+        </div>
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="main-search" placeholder="Search for a company...">
+            <i class="fa-solid fa-circle-xmark" id="clear-search"></i>
+        </div>
+    </header>
+
+    <main>
+        <!-- Home View -->
+        <div id="home-view">
+            <h2>Find Customer Support Fast</h2>
+           
+            <div class="category-grid">
+                <div class="cat-card" onclick="showCompaniesByCategory('Banks & Fintech')">
+                    <i class="fa-solid fa-building-columns" style="color:#2e5da3"></i>
+                    <p>Banks & Fintech</p>
+                </div>
+                <div class="cat-card" onclick="showCompaniesByCategory('Telecom')">
+                    <i class="fa-solid fa-tower-cell" style="color:#2e5da3"></i>
+                    <p>Telecom</p>
+                </div>
+                <div class="cat-card" onclick="showCompaniesByCategory('E-Commerce')">
+                    <i class="fa-solid fa-cart-shopping" style="color:#e53935"></i>
+                    <p>E-Commerce</p>
+                </div>
+                <div class="cat-card" onclick="showCompaniesByCategory('Electricity')">
+                    <i class="fa-solid fa-lightbulb" style="color:#ffb300"></i>
+                    <p>Electricity</p>
+                </div>
+                <div class="cat-card" onclick="showCompaniesByCategory('Logistics')">
+                    <i class="fa-solid fa-truck" style="color:#795548"></i>
+                    <p>Logistics</p>
+                </div>
+                <div class="cat-card" onclick="showCompaniesByCategory('Betting')">
+                    <i class="fa-solid fa-volleyball" style="color:#2e7d32"></i>
+                    <p>Betting</p>
+                </div>
+            </div>
+
+            <!-- Index Error Banner (will show when needed) -->
+            <div id="index-error-banner" class="index-error hidden">
+                <i class="fa-solid fa-database"></i>
+                <span>Firestore index required for sorting. </span>
+                <a href="#" id="create-index-link" target="_blank">Click here to create index</a>
+            </div>
+
+            <div class="scam-alert-container">
+                <div class="scam-alert-header">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Scam Alerts
+                </div>
+                <div class="scam-alert-body">
+                    Beware of Fake Customer Care Numbers!
+                </div>
+                <i class="fa-solid fa-triangle-exclamation scam-icon-bg"></i>
+            </div>
+
+            <!-- Promo Banner -->
+            <div class="promo-banner">
+                <div class="promo-stars">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star-half-stroke"></i>
+                </div>
+                <p class="promo-text">Over 1,000+ verified official help desk contacts at your fingertips.</p>
+                <i class="fa-solid fa-headset promo-headset"></i>
+            </div>
+
+            <!-- News Section -->
+            <div class="news-section" id="news-section">
+                <div class="news-header">
+                    <span class="trending-icon">
+                        <i class="fa-solid fa-arrow-trend-up"></i> Latest News
+                    </span>
+                    <h3>Company Updates</h3>
+                </div>
+               
+                <!-- News Container -->
+                <div id="news-container">
+                    <div class="news-loading">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                        <p>Loading news...</p>
+                    </div>
+                </div>
+
+                <div class="view-more-news">
+                    <button onclick="loadMoreNews()" id="load-more-btn">View More News</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Companies List View -->
+        <div id="companies-list-view" class="hidden">
+            <div class="company-list-header">
+                <div class="back-btn" onclick="hideCompaniesList()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </div>
+                <h2 class="category-title" id="selected-category">Banks & Fintech</h2>
+            </div>
+            <div id="companies-container">
+                <!-- Companies will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Company Detail View -->
+        <div id="company-detail-view" class="hidden">
+            <div class="company-list-header">
+                <div class="back-btn" onclick="hideCompanyDetail()">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </div>
+            </div>
+            <div id="company-detail-container">
+                <!-- Company details will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Search View -->
+        <div id="search-view" class="hidden">
+            <!-- Search results will be loaded here -->
+        </div>
+    </main>
+
+    <nav>
+        <div class="nav-item active" onclick="setActive(this, 'home')"><i class="fa-solid fa-house"></i></div>
+        <div class="nav-item" onclick="setActive(this, 'chats')"><i class="fa-solid fa-comment-dots"></i></div>
+        <div class="nav-item" onclick="setActive(this, 'categories')"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="nav-item" onclick="setActive(this, 'messages')">
+            <i class="fa-solid fa-envelope"></i>
+            <span class="badge">1</span>
+        </div>
+        <div class="nav-item" onclick="setActive(this, 'menu')"><i class="fa-solid fa-bars"></i></div>
+    </nav>
+</div>
+
+<script>
+    // =============================================
+    // FIREBASE CONFIGURATION
+    // =============================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyBgLklQf6ptaQ9nxQs7wj5HIqdfH_bZGg0",
+        authDomain: "help-base-nigeria.firebaseapp.com",
+        projectId: "help-base-nigeria",
+        storageBucket: "help-base-nigeria.firebasestorage.app",
+        messagingSenderId: "231344323475",
+        appId: "1:231344323475:web:f0e809d9c3936094a08666"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // =============================================
+    // GLOBAL VARIABLES
+    // =============================================
+    let currentNewsCount = 5;
+    let lastVisible = null;
+    let loadingNews = false;
+    let hasMoreNews = true;
+    let currentCategory = '';
+    let needsIndex = false;
+    let indexUrl = '';
+
+    // =============================================
+    // MOCK COMPANIES DATA (FALLBACK IF FIREBASE IS EMPTY OR NEEDS INDEX)
+    // =============================================
+    const mockCompanies = {
+        'Banks & Fintech': [
+            {
+                id: 'mock-opay',
+                name: 'Opay',
+                category: 'Banks & Fintech',
+                logo: '',
+                website: 'https://opay-inc.com',
+                phones: [
+                    { number: '+234 700 000 0729', label: 'Support', isWhatsApp: false },
+                    { number: '+234 800 000 0729', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'support@opay-inc.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/opayng' },
+                    { platform: 'instagram', url: 'https://instagram.com/opayng' },
+                    { platform: 'facebook', url: 'https://facebook.com/opayng' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '15A Lekki Road', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 8am-8pm, Sat 9am-5pm',
+                description: 'Leading fintech platform in Nigeria'
+            },
+            {
+                id: 'mock-palmpay',
+                name: 'PalmPay',
+                category: 'Banks & Fintech',
+                logo: '',
+                website: 'https://palmpay.com',
+                phones: [
+                    { number: '+234 1 888 6888', label: 'Support', isWhatsApp: false },
+                    { number: '+234 800 888 6888', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'support@palmpay.com', label: 'Support' },
+                    { email: 'info@palmpay.com', label: 'Info' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/palmpay' },
+                    { platform: 'instagram', url: 'https://instagram.com/palmpay' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '23 Trans Amadi', city: 'Port Harcourt', state: 'Rivers' }
+                ],
+                workingHours: '24/7',
+                description: 'Mobile payment and financial services'
+            },
+            {
+                id: 'mock-access',
+                name: 'Access Bank',
+                category: 'Banks & Fintech',
+                logo: '',
+                website: 'https://accessbankplc.com',
+                phones: [
+                    { number: '+234 1 200 2500', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@accessbank.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/accessbank' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '14/15 Prince Alaba Street', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 8am-6pm',
+                description: 'Leading commercial bank in Nigeria'
+            }
+        ],
+        'Telecom': [
+            {
+                id: 'mock-mtn',
+                name: 'MTN Nigeria',
+                category: 'Telecom',
+                logo: '',
+                website: 'https://mtn.ng',
+                phones: [
+                    { number: '+234 800 1234 567', label: 'Support', isWhatsApp: false },
+                    { number: '+234 800 1234 568', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'support@mtn.ng', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/mtnng' },
+                    { platform: 'facebook', url: 'https://facebook.com/mtnnigeria' },
+                    { platform: 'instagram', url: 'https://instagram.com/mtnng' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Golden Plaza', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Sun 8am-8pm',
+                description: 'Leading telecommunications company'
+            },
+            {
+                id: 'mock-glo',
+                name: 'Glo',
+                category: 'Telecom',
+                logo: '',
+                website: 'https://gloworld.com',
+                phones: [
+                    { number: '+234 800 123 4567', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@gloworld.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/gloworld' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Globacom Building', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: '24/7',
+                description: 'Telecommunications company'
+            },
+            {
+                id: 'mock-airtel',
+                name: 'Airtel Nigeria',
+                category: 'Telecom',
+                logo: '',
+                website: 'https://airtel.ng',
+                phones: [
+                    { number: '+234 800 111 0000', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@airtel.ng', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/airtelng' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '5th Avenue', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Sun 8am-8pm',
+                description: 'Telecommunications services'
+            }
+        ],
+        'E-Commerce': [
+            {
+                id: 'mock-jumia',
+                name: 'Jumia Nigeria',
+                category: 'E-Commerce',
+                logo: '',
+                website: 'https://jumia.com.ng',
+                phones: [
+                    { number: '+234 700 5864 222', label: 'Support', isWhatsApp: false },
+                    { number: '+234 700 5864 223', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'help@jumia.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/jumia' },
+                    { platform: 'instagram', url: 'https://instagram.com/jumia' },
+                    { platform: 'facebook', url: 'https://facebook.com/jumia' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '10 Afribank Street', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 9am-6pm',
+                description: 'Africa\'s leading e-commerce platform'
+            },
+            {
+                id: 'mock-konga',
+                name: 'Konga',
+                category: 'E-Commerce',
+                logo: '',
+                website: 'https://konga.com',
+                phones: [
+                    { number: '+234 700 123 4567', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@konga.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/konga' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Konga House', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 9am-6pm',
+                description: 'Online shopping platform'
+            }
+        ],
+        'Electricity': [
+            {
+                id: 'mock-ikeja',
+                name: 'Ikeja Electric',
+                category: 'Electricity',
+                logo: '',
+                website: 'https://ikejaelectric.com',
+                phones: [
+                    { number: '+234 700 1221 322', label: 'Support', isWhatsApp: false },
+                    { number: '+234 700 1221 323', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'support@ikejaelectric.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/ikejaelectric' },
+                    { platform: 'facebook', url: 'https://facebook.com/ikejaelectric' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '10a ACB Road', city: 'Ikeja', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 8am-5pm',
+                description: 'Electricity distribution company'
+            },
+            {
+                id: 'mock-eedc',
+                name: 'EEDC',
+                category: 'Electricity',
+                logo: '',
+                website: 'https://eedc.com',
+                phones: [
+                    { number: '+234 700 123 4000', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@eedc.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/eedc' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Enugu', city: 'Enugu', state: 'Enugu' }
+                ],
+                workingHours: 'Mon-Fri 8am-5pm',
+                description: 'Electricity distribution'
+            }
+        ],
+        'Logistics': [
+            {
+                id: 'mock-dhl',
+                name: 'DHL Nigeria',
+                category: 'Logistics',
+                logo: '',
+                website: 'https://dhl.com.ng',
+                phones: [
+                    { number: '+234 1 270 3830', label: 'Support', isWhatsApp: false },
+                    { number: '+234 1 270 3831', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'customer.service@dhl.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/dhl' },
+                    { platform: 'facebook', url: 'https://facebook.com/dhl' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '35 Murtala Mohammed Airport Road', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 9am-6pm',
+                description: 'International courier and logistics'
+            },
+            {
+                id: 'mock-fedex',
+                name: 'FedEx Nigeria',
+                category: 'Logistics',
+                logo: '',
+                website: 'https://fedex.com/ng',
+                phones: [
+                    { number: '+234 1 234 5678', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@fedex.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/fedex' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Lagos', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: 'Mon-Fri 9am-6pm',
+                description: 'Courier delivery services'
+            }
+        ],
+        'Betting': [
+            {
+                id: 'mock-bet9ja',
+                name: 'Bet9ja',
+                category: 'Betting',
+                logo: '',
+                website: 'https://bet9ja.com',
+                phones: [
+                    { number: '+234 700 9238 952', label: 'Support', isWhatsApp: false },
+                    { number: '+234 700 9238 953', label: 'WhatsApp', isWhatsApp: true }
+                ],
+                emails: [
+                    { email: 'support@bet9ja.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/bet9ja' },
+                    { platform: 'instagram', url: 'https://instagram.com/bet9ja' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: '24 Adeola Odeku Street', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: '24/7',
+                description: 'Sports betting and gaming'
+            },
+            {
+                id: 'mock-sportybet',
+                name: 'SportyBet',
+                category: 'Betting',
+                logo: '',
+                website: 'https://sportybet.com',
+                phones: [
+                    { number: '+234 700 888 8888', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@sportybet.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/sportybet' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Lagos', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: '24/7',
+                description: 'Online betting platform'
+            },
+            {
+                id: 'mock-betking',
+                name: 'BetKing',
+                category: 'Betting',
+                logo: '',
+                website: 'https://betking.com',
+                phones: [
+                    { number: '+234 700 777 7777', label: 'Support', isWhatsApp: false }
+                ],
+                emails: [
+                    { email: 'support@betking.com', label: 'Support' }
+                ],
+                socialMedia: [
+                    { platform: 'twitter', url: 'https://twitter.com/betking' }
+                ],
+                addresses: [
+                    { type: 'HQ', address: 'Lagos', city: 'Lagos', state: 'Lagos' }
+                ],
+                workingHours: '24/7',
+                description: 'Sports betting'
+            }
+        ]
+    };
+
+    // Mock news data
+    const mockNewsData = [
+        {
+            id: 1,
+            title: "Opay Launches New Savings Feature with 15% Interest Rate",
+            excerpt: "Customers can now earn up to 15% interest on their savings with the new O-Save feature...",
+            company: "Opay",
+            timeAgo: "2 hours ago",
+            imageUrl: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 2,
+            title: "PalmPay Partners with Jumia for Exclusive Shopping Discounts",
+            excerpt: "Get up to 30% cashback when you pay with PalmPay on Jumia this weekend...",
+            company: "PalmPay",
+            timeAgo: "5 hours ago",
+            imageUrl: "https://images.unsplash.com/photo-1522204523234-8729aa95e3b5?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 3,
+            title: "MTN Nigeria Expands 5G Coverage to 12 New Cities",
+            excerpt: "MTN's 5G network now available in Port Harcourt, Kano, and 10 other major cities...",
+            company: "MTN",
+            timeAgo: "1 day ago",
+            imageUrl: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 4,
+            title: "Jumia Black Friday: Biggest Sales Event Starts Next Week",
+            excerpt: "Early bird discounts available for Prime members. Up to 70% off on electronics...",
+            company: "Jumia",
+            timeAgo: "1 day ago",
+            imageUrl: "https://images.unsplash.com/photo-1607083206968-13611e3d76db?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 5,
+            title: "IKEDC Announces New Prepaid Meter Upgrade Process",
+            excerpt: "Customers can now upgrade to smart meters via the new Ikeja Electric app...",
+            company: "Ikeja Electric",
+            timeAgo: "2 days ago",
+            imageUrl: "https://images.unsplash.com/photo-1581094289437-3e8d3b4b8d5b?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 6,
+            title: "DHL Express Introduces New Tracking Feature",
+            excerpt: "Real-time tracking with live map view now available on the DHL mobile app...",
+            company: "DHL",
+            timeAgo: "3 days ago",
+            imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=200&h=200&fit=crop",
+            link: "#"
+        },
+        {
+            id: 7,
+            title: "Bet9ja Announces Major Upgrade to Mobile App",
+            excerpt: "Faster loading times and new payment options added to Nigeria's leading betting platform...",
+            company: "Bet9ja",
+            timeAgo: "4 days ago",
+            imageUrl: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=200&h=200&fit=crop",
+            link: "#"
+        }
+    ];
+
+    // =============================================
+    // VIEW MANAGEMENT
+    // =============================================
+    function showCompaniesByCategory(category) {
+        currentCategory = category;
+        document.getElementById('home-view').classList.add('hidden');
+        document.getElementById('companies-list-view').classList.remove('hidden');
+        document.getElementById('selected-category').textContent = category;
+        loadCompaniesByCategory(category);
+    }
+
+    function hideCompaniesList() {
+        document.getElementById('companies-list-view').classList.add('hidden');
+        document.getElementById('home-view').classList.remove('hidden');
+    }
+
+    function showCompanyDetail(companyId) {
+        document.getElementById('companies-list-view').classList.add('hidden');
+        document.getElementById('company-detail-view').classList.remove('hidden');
+       
+        // Check if it's a mock company (starts with 'mock-')
+        if (companyId.startsWith('mock-')) {
+            showMockCompanyDetail(companyId);
+        } else {
+            loadCompanyDetail(companyId);
+        }
+    }
+
+    function hideCompanyDetail() {
+        document.getElementById('company-detail-view').classList.add('hidden');
+        document.getElementById('companies-list-view').classList.remove('hidden');
+    }
+
+    // =============================================
+    // LOAD COMPANIES BY CATEGORY
+    // =============================================
+    async function loadCompaniesByCategory(category) {
+        const container = document.getElementById('companies-container');
+        container.innerHTML = '<div class="news-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading companies...</p></div>';
+       
+        // Hide any previous index error
+        document.getElementById('index-error-banner').classList.add('hidden');
+       
+        try {
+            // First, try to get from Firebase WITHOUT orderBy to avoid index requirement
+            // This will work even without an index
+            const snapshot = await db.collection('companies')
+                .where('category', '==', category)
+                .get();
+           
+            if (!snapshot.empty) {
+                // Convert to array and sort manually in JavaScript
+                const companies = [];
+                snapshot.forEach(doc => {
+                    companies.push({ id: doc.id, ...doc.data() });
+                });
+               
+                // Sort by name manually
+                companies.sort((a, b) => a.name.localeCompare(b.name));
+               
+                let html = '';
+                companies.forEach(company => {
+                    const phoneCount = company.phones?.length || 0;
+                    const logo = company.logo || '';
+                   
+                    html += `
+                        <div class="company-card" onclick="showCompanyDetail('${company.id}')">
+                            <div class="company-logo">
+                                ${logo ?
+                                    `<img src="${logo}" alt="${company.name}">` :
+                                    `<i class="fa-solid fa-building"></i>`
+                                }
+                            </div>
+                            <div class="company-info">
+                                <h3>${company.name}</h3>
+                                <p><i class="fa-solid fa-phone"></i> ${phoneCount} contact numbers</p>
+                            </div>
+                            <i class="fa-solid fa-chevron-right" style="color: var(--grey);"></i>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+               
+                // Update connection status
+                document.getElementById('connection-status').innerHTML = '<i class="fa-solid fa-circle"></i> Connected';
+                document.getElementById('connection-status').className = 'connection-status status-connected';
+               
+            } else {
+                // No data in Firebase - use mock data
+                useMockCompanies(category);
+            }
+        } catch (error) {
+            console.error('Error loading companies:', error);
+           
+            // Check if it's an index error
+            if (error.message && error.message.includes('index')) {
+                // Extract index creation URL from error
+                const match = error.message.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
+                if (match) {
+                    indexUrl = match[0];
+                    document.getElementById('create-index-link').href = indexUrl;
+                    document.getElementById('index-error-banner').classList.remove('hidden');
+                }
+               
+                // Still show mock data
+                useMockCompanies(category);
+               
+                // Update connection status
+                document.getElementById('connection-status').innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Index Required';
+                document.getElementById('connection-status').className = 'connection-status status-warning';
+            } else {
+                // Some other error, still show mock data
+                useMockCompanies(category);
+            }
+        }
+    }
+
+    function useMockCompanies(category) {
+        const container = document.getElementById('companies-container');
+        const mockCompaniesInCategory = mockCompanies[category] || [];
+       
+        if (mockCompaniesInCategory.length === 0) {
+            container.innerHTML = `
+                <div class="news-empty">
+                    <i class="fa-regular fa-building" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>No companies found in this category yet.</p>
+                </div>
+            `;
+            return;
+        }
+       
+        let html = '';
+        mockCompaniesInCategory.forEach(company => {
+            const phoneCount = company.phones?.length || 0;
+           
+            html += `
+                <div class="company-card" onclick="showCompanyDetail('${company.id}')">
+                    <div class="company-logo">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div class="company-info">
+                        <h3>${company.name}</h3>
+                        <p><i class="fa-solid fa-phone"></i> ${phoneCount} contact numbers</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: var(--grey);"></i>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // SHOW MOCK COMPANY DETAIL
+    // =============================================
+    function showMockCompanyDetail(companyId) {
+        // Find the company in mock data
+        let foundCompany = null;
+        for (const category in mockCompanies) {
+            const company = mockCompanies[category].find(c => c.id === companyId);
+            if (company) {
+                foundCompany = company;
+                break;
+            }
+        }
+       
+        if (!foundCompany) return;
+       
+        const container = document.getElementById('company-detail-container');
+       
+        // Build social media HTML
+        let socialHtml = '';
+        if (foundCompany.socialMedia && foundCompany.socialMedia.length > 0) {
+            socialHtml = '<div class="social-grid">';
+            foundCompany.socialMedia.forEach(social => {
+                if (social.url) {
+                    let icon = 'fa-globe';
+                    if (social.platform === 'twitter') icon = 'fa-brands fa-x-twitter';
+                    else if (social.platform === 'facebook') icon = 'fa-brands fa-facebook';
+                    else if (social.platform === 'instagram') icon = 'fa-brands fa-instagram';
+                    else if (social.platform === 'linkedin') icon = 'fa-brands fa-linkedin';
+                    else if (social.platform === 'youtube') icon = 'fa-brands fa-youtube';
+                    else if (social.platform === 'tiktok') icon = 'fa-brands fa-tiktok';
+                    else if (social.platform === 'telegram') icon = 'fa-brands fa-telegram';
+                    else if (social.platform === 'whatsapp') icon = 'fa-brands fa-whatsapp';
+                   
+                    socialHtml += `
+                        <div class="social-item" onclick="window.open('${social.url}', '_blank')">
+                            <i class="${icon}" style="color: var(--primary-green);"></i>
+                            <span>${social.platform.charAt(0).toUpperCase() + social.platform.slice(1)}</span>
+                        </div>
+                    `;
+                }
+            });
+            socialHtml += '</div>';
+        } else {
+            socialHtml = '<p style="color: var(--grey);">No social media links available</p>';
+        }
+       
+        // Build phones HTML
+        let phonesHtml = '';
+        if (foundCompany.phones && foundCompany.phones.length > 0) {
+            foundCompany.phones.forEach(phone => {
+                const icon = phone.isWhatsApp ? 'fa-brands fa-whatsapp whatsapp-icon' : 'fa-solid fa-phone';
+                phonesHtml += `
+                    <div class="contact-item" onclick="makeCall('${phone.number}')">
+                        <i class="${icon}"></i>
+                        <span>${phone.number}</span>
+                        <span class="contact-label">${phone.label}</span>
+                    </div>
+                `;
+            });
+        } else {
+            phonesHtml = '<p style="color: var(--grey);">No phone numbers available</p>';
+        }
+       
+        // Build emails HTML
+        let emailsHtml = '';
+        if (foundCompany.emails && foundCompany.emails.length > 0) {
+            foundCompany.emails.forEach(email => {
+                emailsHtml += `
+                    <div class="contact-item" onclick="sendEmail('${email.email}')">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>${email.email}</span>
+                        <span class="contact-label">${email.label}</span>
+                    </div>
+                `;
+            });
+        } else {
+            emailsHtml = '<p style="color: var(--grey);">No email addresses available</p>';
+        }
+       
+        // Build addresses HTML
+        let addressesHtml = '';
+        if (foundCompany.addresses && foundCompany.addresses.length > 0) {
+            foundCompany.addresses.forEach(addr => {
+                addressesHtml += `
+                    <div class="address-item">
+                        <div class="address-type">${addr.type === 'HQ' ? 'Head Office' : 'Branch'}</div>
+                        <div class="address-detail">${addr.address}, ${addr.city}, ${addr.state}</div>
+                    </div>
+                `;
+            });
+        } else {
+            addressesHtml = '<p style="color: var(--grey);">No address information available</p>';
+        }
+       
+        const html = `
+            <div class="company-detail">
+                <div class="detail-header">
+                    <div class="detail-logo">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <h1>${foundCompany.name}</h1>
+                    <span class="category-badge">${foundCompany.category}</span>
+                </div>
+               
+                <div class="detail-section">
+                    <h2><i class="fa-solid fa-phone"></i> Phone Numbers</h2>
+                    ${phonesHtml}
+                </div>
+               
+                <div class="detail-section">
+                    <h2><i class="fa-solid fa-envelope"></i> Email Addresses</h2>
+                    ${emailsHtml}
+                </div>
+               
+                ${foundCompany.website ? `
+                <div class="detail-section">
+                    <h2><i class="fa-solid fa-globe"></i> Website</h2>
+                    <div class="website-link" onclick="window.open('${foundCompany.website}', '_blank')">
+                        <span>${foundCompany.website}</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="color: var(--primary-green);"></i>
+                    </div>
+                </div>
+                ` : ''}
+               
+                <div class="detail-section">
+                    <h2><i class="fa-solid fa-hashtag"></i> Social Media</h2>
+                    ${socialHtml}
+                </div>
+               
+                <div class="detail-section">
+                    <h2><i class="fa-solid fa-location-dot"></i> Addresses</h2>
+                    ${addressesHtml}
+                </div>
+               
+                ${foundCompany.workingHours ? `
+                <div class="detail-section">
+                    <h2><i class="fa-regular fa-clock"></i> Working Hours</h2>
+                    <p>${foundCompany.workingHours}</p>
+                </div>
+                ` : ''}
+               
+                ${foundCompany.description ? `
+                <div class="detail-section">
+                    <h2><i class="fa-regular fa-note-sticky"></i> About</h2>
+                    <p>${foundCompany.description}</p>
+                </div>
+                ` : ''}
+            </div>
+        `;
+       
+        container.innerHTML = html;
+    }
+
+    // =============================================
+    // LOAD COMPANY DETAIL FROM FIREBASE
+    // =============================================
+    async function loadCompanyDetail(companyId) {
+        const container = document.getElementById('company-detail-container');
+        container.innerHTML = '<div class="news-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading company details...</p></div>';
+       
+        try {
+            const doc = await db.collection('companies').doc(companyId).get();
+            if (!doc.exists) {
+                container.innerHTML = '<div class="news-empty">Company not found</div>';
+                return;
+            }
+           
+            const company = doc.data();
+           
+            // Build social media HTML
+            let socialHtml = '';
+            if (company.socialMedia && company.socialMedia.length > 0) {
+                socialHtml = '<div class="social-grid">';
+                company.socialMedia.forEach(social => {
+                    if (social.url) {
+                        let icon = 'fa-globe';
+                        if (social.platform === 'twitter') icon = 'fa-brands fa-x-twitter';
+                        else if (social.platform === 'facebook') icon = 'fa-brands fa-facebook';
+                        else if (social.platform === 'instagram') icon = 'fa-brands fa-instagram';
+                        else if (social.platform === 'linkedin') icon = 'fa-brands fa-linkedin';
+                        else if (social.platform === 'youtube') icon = 'fa-brands fa-youtube';
+                        else if (social.platform === 'tiktok') icon = 'fa-brands fa-tiktok';
+                        else if (social.platform === 'telegram') icon = 'fa-brands fa-telegram';
+                        else if (social.platform === 'whatsapp') icon = 'fa-brands fa-whatsapp';
+                       
+                        socialHtml += `
+                            <div class="social-item" onclick="window.open('${social.url}', '_blank')">
+                                <i class="${icon}" style="color: var(--primary-green);"></i>
+                                <span>${social.platform.charAt(0).toUpperCase() + social.platform.slice(1)}</span>
+                            </div>
+                        `;
+                    }
+                });
+                socialHtml += '</div>';
+            } else {
+                socialHtml = '<p style="color: var(--grey);">No social media links available</p>';
+            }
+           
+            // Build phones HTML
+            let phonesHtml = '';
+            if (company.phones && company.phones.length > 0) {
+                company.phones.forEach(phone => {
+                    const icon = phone.isWhatsApp ? 'fa-brands fa-whatsapp whatsapp-icon' : 'fa-solid fa-phone';
+                    phonesHtml += `
+                        <div class="contact-item" onclick="makeCall('${phone.number}')">
+                            <i class="${icon}"></i>
+                            <span>${phone.number}</span>
+                            <span class="contact-label">${phone.label}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                phonesHtml = '<p style="color: var(--grey);">No phone numbers available</p>';
+            }
+           
+            // Build emails HTML
+            let emailsHtml = '';
+            if (company.emails && company.emails.length > 0) {
+                company.emails.forEach(email => {
+                    emailsHtml += `
+                        <div class="contact-item" onclick="sendEmail('${email.email}')">
+                            <i class="fa-solid fa-envelope"></i>
+                            <span>${email.email}</span>
+                            <span class="contact-label">${email.label}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                emailsHtml = '<p style="color: var(--grey);">No email addresses available</p>';
+            }
+           
+            // Build addresses HTML
+            let addressesHtml = '';
+            if (company.addresses && company.addresses.length > 0) {
+                company.addresses.forEach(addr => {
+                    addressesHtml += `
+                        <div class="address-item">
+                            <div class="address-type">${addr.type === 'HQ' ? 'Head Office' : 'Branch'}</div>
+                            <div class="address-detail">${addr.address}, ${addr.city}, ${addr.state}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                addressesHtml = '<p style="color: var(--grey);">No address information available</p>';
+            }
+           
+            const html = `
+                <div class="company-detail">
+                    <div class="detail-header">
+                        <div class="detail-logo">
+                            ${company.logo ?
+                                `<img src="${company.logo}" alt="${company.name}">` :
+                                `<i class="fa-solid fa-building"></i>`
+                            }
+                        </div>
+                        <h1>${company.name}</h1>
+                        <span class="category-badge">${company.category}</span>
+                    </div>
+                   
+                    <div class="detail-section">
+                        <h2><i class="fa-solid fa-phone"></i> Phone Numbers</h2>
+                        ${phonesHtml}
+                    </div>
+                   
+                    <div class="detail-section">
+                        <h2><i class="fa-solid fa-envelope"></i> Email Addresses</h2>
+                        ${emailsHtml}
+                    </div>
+                   
+                    ${company.website ? `
+                    <div class="detail-section">
+                        <h2><i class="fa-solid fa-globe"></i> Website</h2>
+                        <div class="website-link" onclick="window.open('${company.website}', '_blank')">
+                            <span>${company.website}</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="color: var(--primary-green);"></i>
+                        </div>
+                    </div>
+                    ` : ''}
+                   
+                    <div class="detail-section">
+                        <h2><i class="fa-solid fa-hashtag"></i> Social Media</h2>
+                        ${socialHtml}
+                    </div>
+                   
+                    <div class="detail-section">
+                        <h2><i class="fa-solid fa-location-dot"></i> Addresses</h2>
+                        ${addressesHtml}
+                    </div>
+                   
+                    ${company.workingHours ? `
+                    <div class="detail-section">
+                        <h2><i class="fa-regular fa-clock"></i> Working Hours</h2>
+                        <p>${company.workingHours}</p>
+                    </div>
+                    ` : ''}
+                   
+                    ${company.description ? `
+                    <div class="detail-section">
+                        <h2><i class="fa-regular fa-note-sticky"></i> About</h2>
+                        <p>${company.description}</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+           
+            container.innerHTML = html;
+        } catch (error) {
+            console.error('Error loading company details:', error);
+            container.innerHTML = `
+                <div class="news-error">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    <p>Failed to load company details.</p>
+                    <button onclick="loadCompanyDetail('${companyId}')" style="margin-top:10px; padding:8px 20px; background:var(--primary-green); color:white; border:none; border-radius:20px; cursor:pointer;">Retry</button>
+                </div>
+            `;
+        }
+    }
+
+    // =============================================
+    // NEWS FUNCTIONS
+    // =============================================
+    async function loadNewsFromFirebase(reset = true) {
+        const newsContainer = document.getElementById('news-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+       
+        if (reset) {
+            newsContainer.innerHTML = '<div class="news-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Loading news...</p></div>';
+            lastVisible = null;
+            hasMoreNews = true;
+        }
+       
+        if (loadingNews) return;
+        loadingNews = true;
+       
+        if (!reset) {
+            loadMoreBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
+            loadMoreBtn.disabled = true;
+        }
+       
+        try {
+            // Try to get news from Firebase without orderBy first to avoid index issues
+            const snapshot = await db.collection('news')
+                .limit(currentNewsCount)
+                .get();
+           
+            if (!snapshot.empty) {
+                // Convert to array and sort by publishedAt manually
+                const news = [];
+                snapshot.forEach(doc => {
+                    news.push({ id: doc.id, ...doc.data() });
+                });
+               
+                // Sort by publishedAt descending (most recent first)
+                news.sort((a, b) => {
+                    const dateA = a.publishedAt?.toDate ? a.publishedAt.toDate() : new Date(0);
+                    const dateB = b.publishedAt?.toDate ? b.publishedAt.toDate() : new Date(0);
+                    return dateB - dateA;
+                });
+               
+                let newsHtml = '';
+                news.forEach(item => {
+                    const date = item.publishedAt?.toDate ? item.publishedAt.toDate() : new Date();
+                    const timeAgo = getTimeAgo(date);
+                   
+                    newsHtml += `
+                        <div class="news-item" onclick="openNewsArticle('${item.sourceUrl || '#'}')">
+                            <div class="news-content">
+                                <div class="news-meta">
+                                    <span class="company-tag">${item.companyName || item.company || 'Company'}</span>
+                                    <span class="time-ago">${timeAgo}</span>
+                                </div>
+                                <div class="news-title">${item.title || 'Untitled'}</div>
+                                <div class="news-excerpt">
+                                    ${item.excerpt || item.content?.substring(0, 100) + '...' || 'Click to read...'}
+                                    <i class="fa-solid fa-arrow-right" style="color: var(--primary-green);"></i>
+                                </div>
+                            </div>
+                            <div class="news-image" style="background-image: url('${item.imageUrl || 'https://via.placeholder.com/80?text=News'}')"></div>
+                        </div>
+                    `;
+                });
+               
+                if (reset) {
+                    newsContainer.innerHTML = newsHtml;
+                } else {
+                    newsContainer.insertAdjacentHTML('beforeend', newsHtml);
+                }
+               
+                hasMoreNews = snapshot.docs.length === currentNewsCount;
+            } else {
+                // No news in Firebase - use mock news
+                renderMockNews(reset);
+            }
+        } catch (error) {
+            console.error('Error loading news:', error);
+            // Fall back to mock news on error
+            renderMockNews(reset);
+        } finally {
+            loadingNews = false;
+            if (!reset) {
+                loadMoreBtn.innerHTML = 'View More News';
+                loadMoreBtn.disabled = false;
+                if (!hasMoreNews) {
+                    loadMoreBtn.innerHTML = 'No More News';
+                    loadMoreBtn.disabled = true;
+                }
+            }
+        }
+    }
+
+    function renderMockNews(reset = true) {
+        const newsContainer = document.getElementById('news-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+       
+        let newsHtml = '';
+        const newsToShow = mockNewsData.slice(0, currentNewsCount);
+       
+        newsToShow.forEach(item => {
+            newsHtml += `
+                <div class="news-item" onclick="openNewsArticle('${item.link}')">
+                    <div class="news-content">
+                        <div class="news-meta">
+                            <span class="company-tag">${item.company}</span>
+                            <span class="time-ago">${item.timeAgo}</span>
+                        </div>
+                        <div class="news-title">${item.title}</div>
+                        <div class="news-excerpt">
+                            ${item.excerpt}
+                            <i class="fa-solid fa-arrow-right" style="color: var(--primary-green);"></i>
+                        </div>
+                    </div>
+                    <div class="news-image" style="background-image: url('${item.imageUrl}')"></div>
+                </div>
+            `;
+        });
+       
+        if (reset) {
+            newsContainer.innerHTML = newsHtml;
+        } else {
+            newsContainer.insertAdjacentHTML('beforeend', newsHtml);
+        }
+       
+        hasMoreNews = currentNewsCount < mockNewsData.length;
+        loadMoreBtn.innerHTML = hasMoreNews ? 'View More News' : 'No More News';
+        loadMoreBtn.disabled = !hasMoreNews;
+    }
+
+    function loadMoreNews() {
+        if (!hasMoreNews) return;
+        currentNewsCount += 3;
+        loadNewsFromFirebase(false);
+    }
+
+    function getTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + ' minutes ago';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + ' hours ago';
+        const days = Math.floor(hours / 24);
+        if (days < 7) return days + ' days ago';
+        return 'recently';
+    }
+
+    function openNewsArticle(url) {
+        if (url && url !== '#') {
+            window.open(url, '_blank');
+        }
+    }
+
+    // =============================================
+    // SEARCH FUNCTIONALITY
+    // =============================================
+    const searchInput = document.getElementById('main-search');
+    const clearBtn = document.getElementById('clear-search');
+    const homeView = document.getElementById('home-view');
+    const searchView = document.getElementById('search-view');
+    const headerLogo = document.getElementById('header-logo');
+
+    searchInput.addEventListener('input', async (e) => {
+        const val = e.target.value.toLowerCase();
+        if (val.length > 0) {
+            homeView.classList.add('hidden');
+            searchView.classList.remove('hidden');
+            headerLogo.classList.add('hidden');
+            clearBtn.style.display = 'block';
+            await performSearch(val);
+        } else {
+            resetSearch();
+        }
+    });
+
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        resetSearch();
+    });
+
+    function resetSearch() {
+        homeView.classList.remove('hidden');
+        searchView.classList.add('hidden');
+        headerLogo.classList.remove('hidden');
+        clearBtn.style.display = 'none';
+    }
+
+    async function performSearch(query) {
+        searchView.innerHTML = '<div class="news-loading"><i class="fa-solid fa-circle-notch fa-spin"></i><p>Searching...</p></div>';
+       
+        try {
+            // Search in Firebase
+            const snapshot = await db.collection('companies').get();
+            const matches = [];
+           
+            snapshot.forEach(doc => {
+                const company = doc.data();
+                if (company.name.toLowerCase().includes(query)) {
+                    matches.push({ id: doc.id, ...company });
+                }
+            });
+           
+            // Also search in mock data
+            for (const category in mockCompanies) {
+                mockCompanies[category].forEach(company => {
+                    if (company.name.toLowerCase().includes(query)) {
+                        // Check if not already in matches
+                        if (!matches.some(m => m.id === company.id)) {
+                            matches.push(company);
+                        }
+                    }
+                });
+            }
+           
+            if (matches.length === 0) {
+                searchView.innerHTML = `
+                    <div class="news-empty">
+                        <i class="fa-regular fa-building" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>No companies found matching "${query}"</p>
+                    </div>
+                `;
+                return;
+            }
+           
+            let html = '';
+            matches.forEach(company => {
+                const phoneCount = company.phones?.length || 0;
+                html += `
+                    <div class="suggestion-card" onclick="showCompanyDetail('${company.id}')">
+                        <i class="fa-solid fa-building" style="color: var(--primary-green);"></i>
+                        <div>
+                            <strong>${company.name}</strong>
+                            <p style="font-size: 0.8rem; color: var(--grey);">${phoneCount} contact numbers</p>
+                        </div>
+                    </div>
+                `;
+            });
+           
+            searchView.innerHTML = html;
+        } catch (error) {
+            console.error('Search error:', error);
+            searchView.innerHTML = '<div class="news-error">Search failed. Please try again.</div>';
+        }
+    }
+
+    // =============================================
+    // CONTACT FUNCTIONS
+    // =============================================
+    function makeCall(phone) {
+        const cleanNumber = phone.replace(/\s/g, '');
+        window.location.href = `tel:${cleanNumber}`;
+    }
+
+    function sendEmail(email) {
+        window.location.href = `mailto:${email}`;
+    }
+
+    // =============================================
+    // NAVIGATION
+    // =============================================
+    function setActive(element, view) {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+       
+        // Handle navigation
+        if (view === 'home') {
+            hideCompaniesList();
+            hideCompanyDetail();
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('search-view').classList.add('hidden');
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            headerLogo.classList.remove('hidden');
+        }
+    }
+
+    // =============================================
+    // INITIALIZATION
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load news
+        loadNewsFromFirebase(true);
+       
+        // Update connection status
+        const statusEl = document.getElementById('connection-status');
+        statusEl.innerHTML = '<i class="fa-solid fa-circle"></i> Ready';
+        statusEl.className = 'connection-status status-connected';
+       
+        // Add some sample data to Firebase if empty (optional)
+        setTimeout(() => {
+            addSampleDataIfEmpty();
+        }, 2000);
+    });
+
+    // Optional: Add sample data to Firebase if collection is empty
+    async function addSampleDataIfEmpty() {
+        try {
+            const snapshot = await db.collection('companies').limit(1).get();
+            if (snapshot.empty) {
+                console.log('No companies in Firebase, you can add them via admin panel');
+                // Don't auto-add, let admin panel handle it
+            }
+        } catch (error) {
+            console.log('Firebase not ready for sample data');
+        }
+    }
+</script>
+</body>
+</html>
